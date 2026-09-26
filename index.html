@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NearNeed Web Prototype</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQ3ynAh6kLz2d8KxQY6S9rX6W7vU2Qw="
+      crossorigin="">
+<style>
+:root{
+  --bg:#fff8f4; --card:#ffffff; --text:#263238; --muted:#707782;
+  --line:#ece3df; --primary:#ff6b5f; --primary-dark:#e9574d; --secondary:#5f7cff;
+  --soft:#fff0ec; --mint:#e8f8f1; --gold:#fff4cf;
+  --shadow:0 12px 30px rgba(71,53,47,.10);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#fffaf7 0%,#fff6f1 45%,#f7f7ff 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+#app{width:min(430px,100%);min-height:100vh;margin:0 auto;padding-bottom:84px;background:var(--bg)}
+.screen{padding:18px 16px 24px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.brand-wrap{display:flex;align-items:center;gap:10px}
+.brand-logo{
+  width:46px;height:46px;border-radius:15px;
+  background:linear-gradient(145deg,#ff8a65,#ff5f6d);
+  display:grid;place-items:center;box-shadow:0 8px 18px rgba(255,107,95,.25);
+}
+.brand-logo svg{width:34px;height:34px}
+.brand h1{margin:0;font-size:24px;letter-spacing:-.5px}
+.brand p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+
+.page-title{font-size:22px;font-weight:800;margin:0 0 4px}.page-subtitle{font-size:13px;color:var(--muted);margin:0 0 16px}
+.icon-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 6px 14px rgba(71,53,47,.06)}
+.search{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:18px;padding:13px 14px;display:flex;gap:8px;align-items:center;box-shadow:0 8px 20px rgba(71,53,47,.06)}
+.search input{border:0;outline:0;flex:1;background:transparent}
+.filter-block{margin-top:14px}.filter-title{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:8px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:3px}
+.chip{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;transition:.18s;box-shadow:0 3px 10px rgba(71,53,47,.04)}
+.chip.active{background:linear-gradient(135deg,var(--primary),#ff8a65);color:#fff;border-color:transparent;box-shadow:0 7px 16px rgba(255,107,95,.22)}
+.hero{margin-top:16px;background:linear-gradient(135deg,#5f7cff 0%,#7c68ee 55%,#ff7a66 130%);color:#fff;border-radius:24px;padding:20px;box-shadow:0 16px 34px rgba(95,124,255,.20)}
+.hero h2{margin:0 0 6px;font-size:21px}.hero p{margin:0 0 14px;font-size:13px;line-height:1.5}
+.primary-btn,.secondary-btn{border-radius:12px;padding:11px 14px;font-weight:800}
+.primary-btn{border:0;background:linear-gradient(135deg,var(--primary),#ff8567);color:#fff;box-shadow:0 6px 14px rgba(255,107,95,.18)}.secondary-btn{border:1px solid var(--line);background:#fff;color:var(--text)}
+.hero .primary-btn{background:#fff;color:var(--primary)}.full{width:100%}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 10px}
+.section-head h3{margin:0;font-size:16px}.section-head span{font-size:12px;color:var(--muted)}
+.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:20px;padding:15px;margin-bottom:11px;box-shadow:0 8px 22px rgba(71,53,47,.06)}
+.row{display:flex;gap:12px;align-items:flex-start}.grow{flex:1}
+.item-icon,.avatar{width:52px;height:52px;border-radius:16px;background:linear-gradient(145deg,#fff2ec,#eef1ff);display:grid;place-items:center;font-size:24px}
+.request-title{font-size:15px;font-weight:800}.meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.badge{display:inline-block;margin-top:7px;background:var(--soft);color:var(--primary-dark);padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800}
+.rating{font-size:12px;font-weight:800}.card-actions{display:flex;gap:8px;margin-top:12px}.card-actions button{flex:1}
+.form-group{margin-bottom:13px}.form-group label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px}
+.form-control{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;outline:none}
+textarea.form-control{min-height:88px;resize:vertical}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.detail-item{background:#f8f9fc;border-radius:12px;padding:11px}.detail-label{font-size:11px;color:var(--muted)}.detail-value{font-size:13px;font-weight:800;margin-top:3px}
+.message-item{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px;margin-bottom:10px}
+.message-preview{font-size:12px;color:var(--muted);margin-top:4px}
+.chat{display:flex;flex-direction:column;gap:8px}.bubble{max-width:78%;padding:10px 12px;border-radius:14px;font-size:13px}
+.mine{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}.theirs{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;margin-top:14px}.chat-input input{flex:1;border:1px solid var(--line);border-radius:12px;padding:11px}
+.profile{text-align:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}
+.profile-avatar{width:78px;height:78px;border-radius:50%;background:linear-gradient(145deg,#fff0e9,#e8ecff);display:grid;place-items:center;font-size:34px;margin:0 auto 10px;box-shadow:0 10px 22px rgba(71,53,47,.08)}
+.profile h2{margin:0}.profile p{margin:4px 0;color:var(--muted);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}.stat{background:#f8f9fc;border-radius:12px;padding:10px 6px}.stat strong{display:block;font-size:17px}.stat span{font-size:10px;color:var(--muted)}
+.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(430px,100%);background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px 12px;z-index:20}
+.nav-item{border:0;background:transparent;color:var(--muted);font-size:10px}.nav-item span{display:block;font-size:18px}.nav-item.active{color:var(--primary);font-weight:800}
+.back{display:inline-flex;border:0;background:transparent;color:var(--primary);padding:0;margin-bottom:12px;font-weight:800}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#101828;color:#fff;padding:10px 14px;border-radius:12px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:40}.toast.show{opacity:1}
+
+.support-fab{
+  position:fixed;right:max(18px,calc((100vw - 430px)/2 + 18px));bottom:94px;
+  width:56px;height:56px;border:0;border-radius:50%;
+  background:linear-gradient(135deg,#5f7cff,#7c68ee);color:#fff;font-size:24px;
+  display:grid;place-items:center;box-shadow:0 14px 28px rgba(95,124,255,.28);z-index:35;
+}
+.support-panel{
+  position:fixed;right:max(14px,calc((100vw - 430px)/2 + 14px));bottom:160px;
+  width:min(360px,calc(100vw - 28px));background:#fff;border:1px solid var(--line);
+  border-radius:20px;box-shadow:0 18px 50px rgba(31,42,68,.18);z-index:36;
+  display:none;overflow:hidden;
+}
+.support-panel.open{display:block}
+.support-head{background:linear-gradient(135deg,#5f7cff,#7c68ee);color:#fff;padding:14px 15px;display:flex;justify-content:space-between;align-items:center}
+.support-body{padding:14px;max-height:280px;overflow-y:auto;background:#fbfbfe}
+.support-msg{max-width:82%;width:max-content;padding:9px 11px;border-radius:13px;font-size:12px;line-height:1.45;margin-bottom:8px}
+.support-msg.bot{background:#fff;border:1px solid var(--line)}
+.support-msg.user{margin-left:auto;background:var(--primary);color:#fff}
+.support-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:#fff}
+.support-input input{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px;outline:none}
+.support-input button{border:0;background:var(--primary);color:#fff;border-radius:11px;padding:0 13px;font-weight:800}
+
+
+.web-shell{
+  width:min(1220px,calc(100% - 32px));
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 360px;
+  gap:24px;
+  align-items:start;
+}
+#app{
+  width:100%;
+  max-width:none;
+  margin:0;
+  min-height:100vh;
+  padding-bottom:92px;
+  background:transparent;
+}
+.screen{
+  padding:24px 24px 28px;
+}
+.discovery{
+  position:sticky;
+  top:20px;
+  align-self:start;
+  background:rgba(255,255,255,.96);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:16px;
+  margin-top:20px;
+  box-shadow:0 16px 38px rgba(71,53,47,.10);
+}
+.discovery-title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.discovery-title h2{
+  margin:0;
+  font-size:18px;
+}
+.discovery-title p{
+  margin:4px 0 0;
+  font-size:12px;
+  line-height:1.4;
+  color:var(--muted);
+}
+.location-search{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:9px 9px 9px 12px;
+  margin-bottom:10px;
+  box-shadow:0 5px 14px rgba(71,53,47,.05);
+}
+.location-search input{
+  border:0;
+  outline:0;
+  min-width:0;
+  flex:1;
+  background:transparent;
+  font-size:13px;
+}
+.location-search button{
+  border:0;
+  border-radius:10px;
+  background:linear-gradient(135deg,var(--primary),#ff8567);
+  color:#fff;
+  font-weight:800;
+  padding:9px 11px;
+}
+.poi-chips{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:1px 0 10px;
+}
+.poi-chip{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.poi-chip.active{
+  background:var(--secondary);
+  color:#fff;
+  border-color:var(--secondary);
+}
+.map-frame{
+  width:300px;
+  height:300px;
+  max-width:100%;
+  margin:0 auto;
+  overflow:hidden;
+  border-radius:18px;
+  border:1px solid var(--line);
+  background:
+    radial-gradient(circle at 28% 30%,rgba(95,124,255,.18),transparent 22%),
+    radial-gradient(circle at 75% 62%,rgba(255,107,95,.20),transparent 24%),
+    #eef4ef;
+  position:relative;
+}
+#nearMap{
+  width:100%;
+  height:100%;
+  z-index:1;
+}
+.map-loading{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:2;
+  padding:8px 10px;
+  border-radius:10px;
+  background:rgba(255,255,255,.92);
+  font-size:12px;
+  color:var(--muted);
+  box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+.place-list{
+  margin-top:12px;
+  max-height:110px;
+  overflow:auto;
+}
+.place-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 4px;
+  border-bottom:1px solid var(--line);
+}
+.place-row:last-child{border-bottom:0}
+.place-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  background:linear-gradient(145deg,#fff0ea,#edf0ff);
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+}
+.place-name{
+  font-size:12px;
+  font-weight:800;
+}
+.place-meta{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:2px;
+}
+.map-note{
+  margin-top:10px;
+  font-size:10px;
+  color:var(--muted);
+  line-height:1.4;
+}
+.bottom-nav{
+  left:max(16px,calc(50% - 610px + 16px));
+  width:min(calc(100vw - 32px),754px);
+  transform:none;
+  border:1px solid var(--line);
+  border-radius:18px 18px 0 0;
+  box-shadow:0 -10px 28px rgba(71,53,47,.07);
+}
+@media (max-width:980px){
+  .web-shell{
+    width:min(760px,calc(100% - 24px));
+    grid-template-columns:1fr;
+  }
+  .discovery{
+    position:relative;
+    top:auto;
+    margin:0 12px 100px;
+  }
+  .bottom-nav{
+    left:50%;
+    transform:translateX(-50%);
+    width:min(430px,100%);
+    border-left:0;
+    border-right:0;
+    border-radius:0;
+  }
+}
+@media (max-width:520px){
+  .web-shell{width:100%;display:block}
+  .screen{padding:18px 16px 24px}
+  .discovery{
+    margin:8px 16px 100px;
+    border-radius:20px;
+  }
+}
+
+
+.events-section{
+  margin-top:18px;
+}
+.events-title{
+  font-size:17px;
+  font-weight:800;
+  margin:0 0 10px;
+}
+.event-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:10px;
+  box-shadow:0 6px 18px rgba(71,53,47,.05);
+  cursor:pointer;
+  transition:.18s;
+}
+.event-card:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(71,53,47,.08);
+}
+.event-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+.event-date{
+  width:46px;
+  min-width:46px;
+  border-radius:12px;
+  background:linear-gradient(145deg,#fff0ea,#eef0ff);
+  text-align:center;
+  padding:8px 4px;
+}
+.event-date strong{
+  display:block;
+  font-size:16px;
+}
+.event-date span{
+  display:block;
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.event-name{
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+.event-meta{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.4;
+}
+.event-tag{
+  display:inline-block;
+  margin-top:7px;
+  background:var(--soft);
+  color:var(--primary-dark);
+  border-radius:999px;
+  padding:4px 7px;
+  font-size:10px;
+  font-weight:800;
+}
+
+</style>
+</head>
+<body>
+<div class="web-shell">
+  <main id="app"></main>
+
+  <aside class="discovery">
+    <div class="discovery-title">
+      <div>
+        <h2>Explore Nearby</h2>
+        <p>Search an address or ZIP code and discover places around it.</p>
+      </div>
+      <div style="font-size:24px">🗺️</div>
+    </div>
+
+    <div class="location-search">
+      <span>📍</span>
+      <input id="locationInput" placeholder="Enter address or ZIP code"
+             onkeydown="if(event.key==='Enter') searchLocation()">
+      <button onclick="searchLocation()">Search</button>
+    </div>
+
+    <div class="poi-chips">
+      <button class="poi-chip active" data-poi="all" onclick="setPoiType('all',this)">All</button>
+      <button class="poi-chip" data-poi="restaurant" onclick="setPoiType('restaurant',this)">🍽 Restaurants</button>
+      <button class="poi-chip" data-poi="park" onclick="setPoiType('park',this)">🌳 Parks</button>
+      <button class="poi-chip" data-poi="cafe" onclick="setPoiType('cafe',this)">☕ Cafés</button>
+      <button class="poi-chip" data-poi="museum" onclick="setPoiType('museum',this)">🏛 Museums</button>
+      <button class="poi-chip" data-poi="attraction" onclick="setPoiType('attraction',this)">⭐ Attractions</button>
+    </div>
+
+    <div class="map-frame">
+      <div class="map-loading" id="mapLoading">Search a location to explore nearby places</div>
+      <div id="nearMap"></div>
+    </div>
+
+    <div class="place-list" id="placeList">
+      <div class="place-row">
+        <div class="place-icon">📍</div>
+        <div>
+          <div class="place-name">Explore nearby places</div>
+          <div class="place-meta">Search an address or ZIP code above.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="events-section">
+      <h3 class="events-title">Events You Might Be Interested In</h3>
+
+      <div class="event-card" onclick="showToast('Opening event details')">
+        <div class="event-row">
+          <div class="event-date"><strong>28</strong><span>Sep</span></div>
+          <div>
+            <div class="event-name">Neighborhood Food & Music Night</div>
+            <div class="event-meta">6:00 PM · Downtown Community Plaza · 2.1 miles away</div>
+            <span class="event-tag">Food & Music</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-card" onclick="showToast('Opening event details')">
+        <div class="event-row">
+          <div class="event-date"><strong>29</strong><span>Sep</span></div>
+          <div>
+            <div class="event-name">Weekend Park Walk & Social</div>
+            <div class="event-meta">9:00 AM · Riverside Park · 1.4 miles away</div>
+            <span class="event-tag">Outdoor</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-card" onclick="showToast('Opening event details')">
+        <div class="event-row">
+          <div class="event-date"><strong>03</strong><span>Oct</span></div>
+          <div>
+            <div class="event-name">Local Makers & Small Business Market</div>
+            <div class="event-meta">11:00 AM · Market Hall · 3.6 miles away</div>
+            <span class="event-tag">Community</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-note">
+      Prototype map uses OpenStreetMap data and requires an internet connection for live search and nearby-place results.
+    </div>
+  </aside>
+</div>
+
+<button class="support-fab" onclick="toggleSupport()" aria-label="Chat Support">💬</button>
+<div class="support-panel" id="supportPanel">
+  <div class="support-head">
+    <div><strong>NearNeed Support</strong><div style="font-size:11px;opacity:.85;margin-top:2px">How can we help?</div></div>
+    <button onclick="toggleSupport()" style="border:0;background:transparent;color:#fff;font-size:18px">✕</button>
+  </div>
+  <div class="support-body" id="supportBody">
+    <div class="support-msg bot">Hi! I’m NearNeed Support. I can help with posting a need, nearby requests, messages, or account questions.</div>
+  </div>
+  <div class="support-input">
+    <input id="supportText" placeholder="Type your question..." onkeydown="if(event.key==='Enter') sendSupportMessage()">
+    <button onclick="sendSupportMessage()">Send</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+const state={screen:'home',radius:6,category:'All',search:'',selectedRequestId:1,selectedChat:'Jordan',myRequests:[{id:101,title:'Need a moving dolly Saturday morning',distance:0,dateTime:'Sat, 9:00 AM',duration:'3 hours',category:'Borrow/Rent Item',rating:5.0,user:'You',emoji:'🛒',description:'Need a moving dolly for a small apartment move.',status:'Open'}]};
+const requests=[
+{id:1,title:'Need a ladder for 4 hours tomorrow',distance:1.2,dateTime:'Tomorrow, 10:00 AM',duration:'4 hours',category:'Borrow/Rent Item',rating:4.9,user:'Jordan',emoji:'🪜',description:'I need a 10–12 ft ladder for a small home project. I can pick it up and return it the same day.'},
+{id:2,title:'Looking for a walking partner tonight',distance:0.8,dateTime:'Tonight, 7:00 PM',duration:'45 minutes',category:'Activity Partner',rating:4.8,user:'Maya',emoji:'🚶',description:'Looking for a casual walking partner at a nearby public park. Easy pace.'},
+{id:3,title:'Need a gym partner this week',distance:2.5,dateTime:'Wed–Fri, 6:30 PM',duration:'1 hour',category:'Activity Partner',rating:4.7,user:'Chris',emoji:'🏋️',description:'Looking for someone consistent for a few evening workouts this week.'},
+{id:4,title:'Need a drill for one day',distance:3.1,dateTime:'Friday, 2:00 PM',duration:'1 day',category:'Borrow/Rent Item',rating:5.0,user:'Ava',emoji:'🛠️',description:'Need a cordless drill for mounting a few shelves. Drill bits would be helpful.'},
+{id:5,title:'Quick help moving a small table',distance:4.6,dateTime:'Saturday, 11:00 AM',duration:'30 minutes',category:'Quick Help',rating:4.9,user:'Leo',emoji:'📦',description:'Need one extra person to help carry a small table down one flight of stairs.'},
+{id:6,title:'Study partner for database exam',distance:5.4,dateTime:'Sunday, 3:00 PM',duration:'2 hours',category:'Shared Plans',rating:4.8,user:'Nina',emoji:'📚',description:'Looking for someone to review SQL and database concepts at a public library.'}
+];
+const chats={Jordan:[{from:'them',text:'Hi! I still need the ladder tomorrow.'},{from:'me',text:'I may have one available. What time do you need it?'},{from:'them',text:'Around 10 AM for about four hours.'}],Maya:[{from:'them',text:'Hey! I usually walk at the park around 7.'},{from:'me',text:'That timing works for me.'}]};
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600)}
+function setScreen(s){state.screen=s;render();window.scrollTo(0,0)}
+function setRadius(r){state.radius=r;render()}
+function setCategory(c){state.category=c;render()}
+function allNearbyRequests(){return [...state.myRequests,...requests]}
+function filteredRequests(){return allNearbyRequests().filter(r=>r.distance<=state.radius&&(state.category==='All'||r.category===state.category)&&(!state.search||(r.title+' '+r.category+' '+r.description).toLowerCase().includes(state.search.toLowerCase())))}
+
+function updateSearch(value){
+  state.search=value;
+  const container=document.getElementById('requestList');
+  const count=document.getElementById('requestCount');
+  if(!container) return;
+  const list=filteredRequests();
+  container.innerHTML=list.length?list.map(card).join(''):'<div style="text-align:center;padding:26px 12px;color:var(--muted)">No requests match your search.</div>';
+  if(count) count.textContent=list.length+' found';
+}
+function openRequest(id){state.selectedRequestId=id;setScreen('details')}
+function respondTo(id){const r=requests.find(x=>x.id===id);state.selectedRequestId=id;state.selectedChat=r.user;if(!chats[r.user])chats[r.user]=[{from:'them',text:'Thanks for responding to my request.'}];setScreen('chat')}
+function nav(active='home'){return `<div class="bottom-nav">
+<button class="nav-item ${active==='home'?'active':''}" onclick="setScreen('home')"><span>🏠</span>Home</button>
+<button class="nav-item ${active==='nearby'?'active':''}" onclick="setScreen('nearby')"><span>📍</span>Nearby</button>
+<button class="nav-item" onclick="setScreen('post')"><span>➕</span>Post</button>
+<button class="nav-item ${active==='messages'?'active':''}" onclick="setScreen('messages')"><span>💬</span>Messages</button>
+<button class="nav-item ${active==='profile'?'active':''}" onclick="setScreen('profile')"><span>👤</span>Profile</button>
+</div>`}
+function card(r){const mine=r.user==='You';return `<div class="card"><div class="row"><div class="item-icon">${r.emoji}</div><div class="grow"><div class="request-title">${r.title}</div><div class="meta">${r.distance} miles away · ${r.dateTime}<br>${r.duration}</div><span class="badge">${r.category}</span>${mine?'<span class="badge" style="margin-left:6px;background:#e8f8f1;color:#197a52">Your Post</span>':''}</div><div class="rating">★ ${r.rating}</div></div><div class="card-actions"><button class="secondary-btn" onclick="openRequest(${r.id})">View Details</button>${mine?'<button class="primary-btn" onclick="setScreen(\'myRequests\')">Manage</button>':`<button class="primary-btn" onclick="respondTo(${r.id})">Respond</button>`}</div></div>`}
+function home(){const list=filteredRequests();return `<div class="screen">
+<div class="topbar">
+<div class="brand-wrap">
+  <div class="brand-logo" aria-label="NearNeed logo">
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <path d="M10 31L32 13L54 31V52C54 55 52 57 49 57H15C12 57 10 55 10 52V31Z" fill="white" opacity=".98"/>
+      <path d="M25 57V40C25 37.5 27 35.5 29.5 35.5H34.5C37 35.5 39 37.5 39 40V57" fill="#FFD66B"/>
+      <circle cx="31" cy="44" r="2" fill="#FF6B5F"/>
+      <path d="M20 30C24 25 28 23 32 23C36 23 40 25 44 30" stroke="#FF6B5F" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M27 29.5C28.5 31.5 30.2 32.5 32 32.5C33.8 32.5 35.5 31.5 37 29.5" stroke="#FF6B5F" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M7 31L32 10L57 31" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="brand"><h1>NearNeed</h1><p>Small needs. Nearby people.</p></div>
+</div>
+<button class="icon-btn" onclick="setScreen('myRequests')">📋</button>
+</div>
+<h2 class="page-title">What do you need today?</h2><p class="page-subtitle">Find items, activity partners, and shared local plans nearby.</p>
+<div class="search">🔎<input id="homeSearch" placeholder="Search nearby needs..." value="${state.search}" oninput="updateSearch(this.value)"></div>
+<div class="filter-block"><div class="filter-title">DISTANCE</div><div class="chips">${[1,3,6].map(r=>`<button class="chip ${state.radius===r?'active':''}" onclick="setRadius(${r})">${r} mile${r>1?'s':''}</button>`).join('')}</div></div>
+<div class="filter-block"><div class="filter-title">CATEGORY</div><div class="chips">${['All','Borrow/Rent Item','Activity Partner','Shared Plans'].map(c=>`<button class="chip ${state.category===c?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('')}</div></div>
+<div class="hero"><h2>Need something just once?</h2><p>Post a temporary need and let nearby people respond.</p><button class="primary-btn" onclick="setScreen('post')">Post a Need</button></div>
+<div class="section-head"><h3>Nearby requests</h3><span id="requestCount">${list.length} found</span></div><div id="requestList">${list.length?list.map(card).join(''):'<div style="text-align:center;padding:26px 12px;color:var(--muted)">No requests match your search.</div>'}</div></div>${nav('home')}`}
+function nearby(){const list=filteredRequests();return `<div class="screen"><h2 class="page-title">Nearby Requests</h2><p class="page-subtitle">Requests within ${state.radius} miles.</p><div class="filter-block"><div class="filter-title">DISTANCE</div><div class="chips">${[1,3,6].map(r=>`<button class="chip ${state.radius===r?'active':''}" onclick="setRadius(${r})">${r} mile${r>1?'s':''}</button>`).join('')}</div></div><div class="section-head"><h3>Requests near you</h3><span>${list.length}</span></div>${list.map(card).join('')}</div>${nav('nearby')}`}
+function post(){return `<div class="screen"><button class="back" onclick="setScreen('home')">← Back</button><h2 class="page-title">Post a Need</h2><p class="page-subtitle">Tell nearby users what you need and when you need it.</p><div class="card">
+<div class="form-group"><label>Request title</label><input id="postTitle" class="form-control" placeholder="Example: Need a ladder tomorrow"></div>
+<div class="form-group"><label>Category</label><select id="postCategory" class="form-control"><option>Borrow/Rent Item</option><option>Activity Partner</option><option>Shared Plans</option></select></div>
+<div class="form-row"><div class="form-group"><label>Date / Time</label><input id="postDate" class="form-control" placeholder="Tomorrow 10 AM"></div><div class="form-group"><label>Duration</label><input id="postDuration" class="form-control" placeholder="4 hours"></div></div>
+<div class="form-group"><label>Description</label><textarea id="postDescription" class="form-control" placeholder="Add helpful details..."></textarea></div>
+<button class="primary-btn full" onclick="submitNeed()">Post Need</button></div></div>`}
+function submitNeed(){const title=document.getElementById('postTitle').value.trim();if(!title){showToast('Add a request title');return}const category=document.getElementById('postCategory').value;const dateTime=document.getElementById('postDate').value.trim()||'Flexible time';const duration=document.getElementById('postDuration').value.trim()||'Flexible duration';const description=document.getElementById('postDescription').value.trim()||'No additional details.';state.myRequests.unshift({id:Date.now(),title,distance:0.1,dateTime,duration,category,rating:5.0,user:'You',emoji:category==='Activity Partner'?'🚶':category==='Shared Plans'?'📅':'📦',description,status:'Open'});showToast('Your need was posted');setScreen('myRequests')}
+function details(){const r=requests.find(x=>x.id===state.selectedRequestId)||state.myRequests.find(x=>x.id===state.selectedRequestId);return `<div class="screen"><button class="back" onclick="setScreen('home')">← Back</button><div class="detail-box"><div class="row"><div class="item-icon">${r.emoji}</div><div class="grow"><div class="request-title">${r.title}</div><div class="meta">Posted by ${r.user}</div></div><div class="rating">★ ${r.rating}</div></div><div class="detail-grid"><div class="detail-item"><div class="detail-label">Distance</div><div class="detail-value">${r.distance} miles</div></div><div class="detail-item"><div class="detail-label">Category</div><div class="detail-value">${r.category}</div></div><div class="detail-item"><div class="detail-label">Date / Time</div><div class="detail-value">${r.dateTime}</div></div><div class="detail-item"><div class="detail-label">Duration</div><div class="detail-value">${r.duration}</div></div></div><div style="margin-top:14px"><div class="detail-label">Details</div><div style="font-size:13px;line-height:1.55;margin-top:4px">${r.description}</div></div><div class="card-actions">${r.user==='You'?`<button class="primary-btn" onclick="setScreen('myRequests')">Manage Request</button>`:`<button class="primary-btn full" onclick="respondTo(${r.id})">Respond</button>`}</div></div></div>`}
+function messages(){return `<div class="screen"><h2 class="page-title">Messages</h2><p class="page-subtitle">Conversations with nearby users.</p>${Object.keys(chats).map(name=>`<div class="message-item" onclick="state.selectedChat='${name}';setScreen('chat')"><div class="avatar">👤</div><div class="grow"><div class="request-title">${name}</div><div class="message-preview">${chats[name][chats[name].length-1].text}</div></div><div>›</div></div>`).join('')}</div>${nav('messages')}`}
+function chat(){const msgs=chats[state.selectedChat]||[];return `<div class="screen"><button class="back" onclick="setScreen('messages')">← Messages</button><h2 class="page-title">${state.selectedChat}</h2><p class="page-subtitle">Keep meetups in public places when appropriate.</p><div class="chat">${msgs.map(m=>`<div class="bubble ${m.from==='me'?'mine':'theirs'}">${m.text}</div>`).join('')}</div><div class="chat-input"><input id="chatText" placeholder="Write a message..."><button class="primary-btn" onclick="sendMessage()">Send</button></div></div>`}
+function sendMessage(){const i=document.getElementById('chatText');const t=i.value.trim();if(!t)return;if(!chats[state.selectedChat])chats[state.selectedChat]=[];chats[state.selectedChat].push({from:'me',text:t});render()}
+function profile(){return `<div class="screen"><h2 class="page-title">Profile</h2><p class="page-subtitle">Your NearNeed identity.</p><div class="profile"><div class="profile-avatar">🙂</div><h2>Alex Morgan</h2><p>Verified community member</p><div class="stats"><div class="stat"><strong>4.9</strong><span>Rating</span></div><div class="stat"><strong>18</strong><span>Completed</span></div><div class="stat"><strong>2.1 mi</strong><span>Avg. match</span></div></div></div><div class="section-head"><h3>Account</h3></div><div class="card"><button class="secondary-btn full" onclick="setScreen('myRequests')">My Requests</button><div style="height:8px"></div><button class="secondary-btn full" onclick="showToast('Safety settings opened')">Verification & Safety</button></div></div>${nav('profile')}`}
+function myRequests(){return `<div class="screen"><button class="back" onclick="setScreen('home')">← Back</button><h2 class="page-title">My Requests</h2><p class="page-subtitle">Needs you have posted.</p>${state.myRequests.map(r=>`<div class="card"><div class="row"><div class="item-icon">${r.emoji}</div><div class="grow"><div class="request-title">${r.title}</div><div class="meta">${r.dateTime} · ${r.duration}</div><span class="badge">${r.status}</span></div></div><div class="card-actions"><button class="secondary-btn" onclick="r.status='Closed';render()">Close</button><button class="primary-btn" onclick="state.selectedRequestId=${r.id};setScreen('details')">View</button></div></div>`).join('')}<button class="primary-btn full" onclick="setScreen('post')">Post Another Need</button></div>`}
+function render(){const app=document.getElementById('app');if(state.screen==='home')app.innerHTML=home();else if(state.screen==='nearby')app.innerHTML=nearby();else if(state.screen==='post')app.innerHTML=post();else if(state.screen==='details')app.innerHTML=details();else if(state.screen==='messages')app.innerHTML=messages();else if(state.screen==='chat')app.innerHTML=chat();else if(state.screen==='profile')app.innerHTML=profile();else if(state.screen==='myRequests')app.innerHTML=myRequests()}
+
+function toggleSupport(){
+  const panel=document.getElementById('supportPanel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')) setTimeout(()=>document.getElementById('supportText')?.focus(),100);
+}
+function sendSupportMessage(){
+  const input=document.getElementById('supportText');
+  const body=document.getElementById('supportBody');
+  const text=input.value.trim();
+  if(!text)return;
+  const user=document.createElement('div');
+  user.className='support-msg user';user.textContent=text;body.appendChild(user);
+  input.value='';body.scrollTop=body.scrollHeight;
+  setTimeout(()=>{
+    const bot=document.createElement('div');bot.className='support-msg bot';
+    const q=text.toLowerCase();
+    if(q.includes('post')) bot.textContent='Tap + Post, choose a category, add the time and duration, then tap Post Need. Your post will appear in Nearby Requests.';
+    else if(q.includes('near')||q.includes('distance')) bot.textContent='Use the 1, 3, or 6 mile filter on Home or Nearby Requests.';
+    else if(q.includes('message')||q.includes('chat')) bot.textContent='Tap Respond on a request to open a conversation with that person.';
+    else bot.textContent='I can help with posting needs, nearby filters, messages, profiles, and basic NearNeed navigation.';
+    body.appendChild(bot);body.scrollTop=body.scrollHeight;
+  },400);
+}
+
+
+let nearMapInstance=null;
+let poiLayer=null;
+let currentPoiType='all';
+let searchedCenter=null;
+
+const poiIcons={
+  restaurant:'🍽️',
+  cafe:'☕',
+  park:'🌳',
+  museum:'🏛️',
+  attraction:'⭐',
+  other:'📍'
+};
+
+function initializeExploreMap(){
+  const loading=document.getElementById('mapLoading');
+  if(typeof L==='undefined'){
+    if(loading) loading.textContent='Live map unavailable. Internet access is required.';
+    return;
+  }
+  nearMapInstance=L.map('nearMap',{zoomControl:true}).setView([39.5,-98.35],4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap'
+  }).addTo(nearMapInstance);
+  poiLayer=L.layerGroup().addTo(nearMapInstance);
+}
+
+function setPoiType(type,button){
+  currentPoiType=type;
+  document.querySelectorAll('.poi-chip').forEach(b=>b.classList.remove('active'));
+  if(button) button.classList.add('active');
+  if(searchedCenter) loadNearbyPlaces(searchedCenter.lat,searchedCenter.lon);
+}
+
+async function searchLocation(){
+  const input=document.getElementById('locationInput');
+  const loading=document.getElementById('mapLoading');
+  const query=input.value.trim();
+  if(!query){
+    showToast('Enter an address or ZIP code');
+    return;
+  }
+  if(!nearMapInstance){
+    initializeExploreMap();
+    if(!nearMapInstance) return;
+  }
+
+  loading.style.display='block';
+  loading.textContent='Finding location...';
+
+  try{
+    const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(query);
+    const response=await fetch(url,{headers:{'Accept':'application/json'}});
+    const data=await response.json();
+    if(!data.length){
+      loading.textContent='Location not found. Try another address or ZIP.';
+      return;
+    }
+    const lat=parseFloat(data[0].lat);
+    const lon=parseFloat(data[0].lon);
+    searchedCenter={lat,lon,label:data[0].display_name};
+    nearMapInstance.setView([lat,lon],14);
+
+    if(poiLayer) poiLayer.clearLayers();
+    L.marker([lat,lon]).addTo(poiLayer).bindPopup('<b>Search area</b><br>'+escapeHtml(data[0].display_name));
+
+    await loadNearbyPlaces(lat,lon);
+    loading.style.display='none';
+  }catch(err){
+    loading.style.display='block';
+    loading.textContent='Could not load live places. Check your internet connection.';
+  }
+}
+
+function buildOverpassFilter(){
+  if(currentPoiType==='restaurant') return '["amenity"="restaurant"]';
+  if(currentPoiType==='cafe') return '["amenity"="cafe"]';
+  if(currentPoiType==='park') return '["leisure"="park"]';
+  if(currentPoiType==='museum') return '["tourism"="museum"]';
+  if(currentPoiType==='attraction') return '["tourism"="attraction"]';
+  return null;
+}
+
+async function loadNearbyPlaces(lat,lon){
+  const loading=document.getElementById('mapLoading');
+  loading.style.display='block';
+  loading.textContent='Loading nearby places...';
+
+  const radius=4500;
+  let query;
+
+  const single=buildOverpassFilter();
+  if(single){
+    query=`[out:json][timeout:18];
+      (
+        node(around:${radius},${lat},${lon})${single};
+        way(around:${radius},${lat},${lon})${single};
+        relation(around:${radius},${lat},${lon})${single};
+      );
+      out center 35;`;
+  }else{
+    query=`[out:json][timeout:18];
+      (
+        node(around:${radius},${lat},${lon})["amenity"="restaurant"];
+        node(around:${radius},${lat},${lon})["amenity"="cafe"];
+        node(around:${radius},${lat},${lon})["leisure"="park"];
+        node(around:${radius},${lat},${lon})["tourism"="museum"];
+        node(around:${radius},${lat},${lon})["tourism"="attraction"];
+        way(around:${radius},${lat},${lon})["leisure"="park"];
+        way(around:${radius},${lat},${lon})["tourism"="museum"];
+        way(around:${radius},${lat},${lon})["tourism"="attraction"];
+      );
+      out center 35;`;
+  }
+
+  try{
+    const response=await fetch('https://overpass-api.de/api/interpreter',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+      body:'data='+encodeURIComponent(query)
+    });
+    const data=await response.json();
+
+    const places=data.elements
+      .map(el=>{
+        const plat=el.lat ?? el.center?.lat;
+        const plon=el.lon ?? el.center?.lon;
+        if(plat==null||plon==null) return null;
+        const tags=el.tags||{};
+        let type='other';
+        if(tags.amenity==='restaurant') type='restaurant';
+        else if(tags.amenity==='cafe') type='cafe';
+        else if(tags.leisure==='park') type='park';
+        else if(tags.tourism==='museum') type='museum';
+        else if(tags.tourism==='attraction') type='attraction';
+        const name=tags.name || ({
+          restaurant:'Nearby restaurant',
+          cafe:'Nearby café',
+          park:'Nearby park',
+          museum:'Nearby museum',
+          attraction:'Nearby attraction'
+        }[type] || 'Nearby place');
+        return {
+          lat:plat,lon:plon,name,type,
+          distance:distanceMiles(lat,lon,plat,plon)
+        };
+      })
+      .filter(Boolean)
+      .sort((a,b)=>a.distance-b.distance)
+      .slice(0,18);
+
+    renderPlaces(places);
+    loading.style.display='none';
+  }catch(err){
+    loading.style.display='block';
+    loading.textContent='Nearby-place search is temporarily unavailable.';
+    renderPlaces([]);
+  }
+}
+
+function renderPlaces(places){
+  if(poiLayer && searchedCenter){
+    poiLayer.clearLayers();
+    L.marker([searchedCenter.lat,searchedCenter.lon])
+      .addTo(poiLayer)
+      .bindPopup('<b>Search area</b><br>'+escapeHtml(searchedCenter.label));
+  }
+
+  const list=document.getElementById('placeList');
+  if(!places.length){
+    list.innerHTML='<div class="place-row"><div class="place-icon">📍</div><div><div class="place-name">No nearby places loaded</div><div class="place-meta">Try another category or a broader ZIP/address.</div></div></div>';
+    return;
+  }
+
+  list.innerHTML=places.slice(0,7).map(place=>`
+    <div class="place-row" onclick="focusPlace(${place.lat},${place.lon},'${escapeJs(place.name)}')" style="cursor:pointer">
+      <div class="place-icon">${poiIcons[place.type]||'📍'}</div>
+      <div style="min-width:0">
+        <div class="place-name">${escapeHtml(place.name)}</div>
+        <div class="place-meta">${capitalize(place.type)} · ${place.distance.toFixed(1)} miles away</div>
+      </div>
+    </div>
+  `).join('');
+
+  places.forEach(place=>{
+    if(!poiLayer) return;
+    const marker=L.marker([place.lat,place.lon]).addTo(poiLayer);
+    marker.bindPopup(`<b>${escapeHtml(place.name)}</b><br>${capitalize(place.type)} · ${place.distance.toFixed(1)} mi`);
+  });
+}
+
+function focusPlace(lat,lon,name){
+  if(!nearMapInstance) return;
+  nearMapInstance.setView([lat,lon],16);
+  L.popup().setLatLng([lat,lon]).setContent('<b>'+escapeHtml(name)+'</b>').openOn(nearMapInstance);
+}
+
+function distanceMiles(lat1,lon1,lat2,lon2){
+  const R=3958.8;
+  const toRad=v=>v*Math.PI/180;
+  const dLat=toRad(lat2-lat1);
+  const dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+function escapeHtml(value){
+  return String(value??'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+function escapeJs(value){
+  return String(value??'').replaceAll("\\","\\\\").replaceAll("'","\\'");
+}
+function capitalize(value){
+  const v=String(value||'place');
+  return v.charAt(0).toUpperCase()+v.slice(1);
+}
+
+render();
+initializeExploreMap();
+</script>
+</body>
+</html>
